@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <script>
+        // {data: {text: '', info: {name: ''}}}
+        class KVue {
+            constructor(option) {
+                this.$op = option
+                this.$data = option.data
+
+                // 设置监听函数
+                this.observer(this.$data)
+            }
+
+            observer(value) {
+                if (!value || typeof value !== 'object') return
+
+                Object.keys(value).forEach(key => {
+                    // 响应函数
+                    this.defineResponse(value, key, value[key])
+                })
+            }
+
+            defineResponse(obj, key, val) {
+
+                // 递归解决数据嵌套
+                this.observer(val)
+
+                Object.defineProperty(obj, key, {
+                    get() {
+                        return val
+                    },
+                    set(newVal) {
+                        if (newVal === val) return
+
+                        val = newVal
+
+                        console.log(`${key} 数据发生改变: ${val}`);
+                    }
+                })
+            }
+        }
+
+        // Dep：用来管理观察者 watcher
+
+    </script>
+    
+    <script>
+        var kvue = new KVue({
+            data: {
+                text: "哈哈",
+                info: {
+                    name: "名字"
+                }
+            }
+        })
+        kvue.$data.text = "哈哈哈"
+        kvue.$data.info.name = "姓名"
+    </script>
+</body>
+
+</html>
