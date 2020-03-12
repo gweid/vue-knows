@@ -1,3 +1,11 @@
+<!--
+ * @Author: your name
+ * @Date: 2020-03-12 21:50:34
+ * @LastEditTime: 2020-03-12 23:21:33
+ * @LastEditors: Please set LastEditors
+ * @Description: In User Settings Edit
+ * @FilePath: \vue-knows\test2.html
+ -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,51 +17,8 @@
 </head>
 
 <body>
+    <script src="./kvue.js"></script>
 
-    <script>
-        // {data: {text: '', info: {name: ''}}}
-        class KVue {
-            constructor(option) {
-                this.$op = option
-                this.$data = option.data
-
-                // 设置监听函数
-                this.observer(this.$data)
-            }
-
-            observer(value) {
-                if (!value || typeof value !== 'object') return
-
-                Object.keys(value).forEach(key => {
-                    // 响应函数
-                    this.defineResponse(value, key, value[key])
-                })
-            }
-
-            defineResponse(obj, key, val) {
-
-                // 递归解决数据嵌套
-                this.observer(val)
-
-                Object.defineProperty(obj, key, {
-                    get() {
-                        return val
-                    },
-                    set(newVal) {
-                        if (newVal === val) return
-
-                        val = newVal
-
-                        console.log(`${key} 数据发生改变: ${val}`);
-                    }
-                })
-            }
-        }
-
-        // Dep：用来管理观察者 watcher
-
-    </script>
-    
     <script>
         var kvue = new KVue({
             data: {
