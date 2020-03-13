@@ -1,0 +1,36 @@
+<!--
+ * @Author: your name
+ * @Date: 2020-03-12 21:50:34
+ * @LastEditTime: 2020-03-12 23:21:33
+ * @LastEditors: Please set LastEditors
+ * @Description: In User Settings Edit
+ * @FilePath: \vue-knows\test2.html
+ -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="./kvue.js"></script>
+
+    <script>
+        var kvue = new KVue({
+            data: {
+                text: "哈哈",
+                info: {
+                    name: "名字"
+                }
+            }
+        })
+        kvue.$data.text = "哈哈哈"
+        kvue.$data.info.name = "姓名"
+    </script>
+</body>
+
+</html>

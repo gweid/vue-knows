@@ -12,7 +12,10 @@ compile 除了去扫描，还做一件非常重要的事，就是依赖收集。
 
 ![图片](/imgs/img2.png)
 
-#### 二、编译
+#### 二、编译。  实例 test3
+核心: 获取 DOM, 遍历 DOM, 获取 {{}} 设置的变量，以及每个 DOM 的属性，截获 v-xx、@xx 等。生成 AST 语法树，形成虚拟 DOM，绑定更新函数，把 AST 语法树转换为渲染函数
+
+![图片](/imgs/img5.png)
 
 -   1、parse
     -   使用正则解释 template 中的 Vue 指令(v-xxx)变量等，形成 AST 语法树
@@ -21,9 +24,13 @@ compile 除了去扫描，还做一件非常重要的事，就是依赖收集。
 -   3、generate
     -   把 parse 生成的 AST 语法树转换为渲染函数 render function
 
+```
+
+```
+
 #### 三、虚拟 DOM
 
-虚拟 DOM 就是用 js 对象来描述一个真实 dom 结构，当数据修改的时候，会生成一颗新的虚拟 DOM 树, 然后做 diff 计算，对比出新旧 DOM 树的变化，最后汇总，一次性改变更新节点。主要原因就是 js 的比较非常快，但是操作页面 dom 非常慢，通过在 js 中比较完再一次性修改。
+虚拟 DOM 就是用 js 对象来描述一个真实 dom 结构，当数据修改的时候，会生成一颗新的虚拟 DOM 树, 然后做 diff 计算，对比出新旧 DOM 树的变化，最后汇总，一次性改变更新节点。主要原因就是 js 的运行非常快，但是操作页面 dom 非常慢，通过在 js 中比较完再一次性修改。
 
 ```
 {
@@ -43,11 +50,14 @@ compile 除了去扫描，还做一件非常重要的事，就是依赖收集。
 ```
 
 #### 四、diff 算法
+diff 算法是一种通过同层的树节点进行比较的高效算法，避免了对树进行逐层搜索遍历
+
+![图片](/imgs/img4.png)
 
 #### 五、Vue2 的响应式原理
 主要利用了 Object.defineProperty 的数据劫持
 
-##### 简单用 Object.defineProperty 实现。 实例 test1.html
+##### 简单用 Object.defineProperty 实现。  实例 test1
 
 ```
 var obj = {}
@@ -66,48 +76,87 @@ Object.defineProperty(obj, 'name', {
 obj.name = "jack"
 ```
 
-##### 六、模拟 vue 实现一个响应式。实例 test2.html
+##### 六、模拟 vue 实现一个数据劫持。  实例 test2
 依赖收集：每次进行更新的时候，会对模板视图进行扫描，判断哪些地方对发生更改的数据有依赖，再更新视图
 
 ![图片](/imgs/img3.png)
 
 ```
 // {data: {text: '', info: {name: ''}}}
-class Kvue {
-    constructor(option) {
-        this.$op = option
-        this.$data = option.data
 
-        // 设置一个监听函数
-        this.observe(this.$data)
-    }
+class KVue {
+  constructor(option) {
+    this.$op = option
+    this.$data = option.data
 
-    observe(val) {
-        if (!val || typeof val !== 'object') return
+    // 设置监听函数
+    this.observer(this.$data)
 
-        Object.keys(val).forEach(key => {
+    // new Watcher()
+    // this.$data.text
+    // new Watcher()
+    // this.$data.info.name
+  }
 
-            this.defineResponse(val, key, val[key])
-        })
-    }
+  observer(value) {
+    if (!value || typeof value !== 'object') return
 
-    defineResponse(obj, key, val) {
-        // 递归解决数据嵌套
-        this.observe(val)
+    Object.keys(value).forEach(key => {
+      // 响应函数
+      this.defineResponse(value, key, value[key])
+    })
+  }
 
-        Object.defineProperty(obj, key, {
-            get() {
-                return val
-            },
-            set(newVal) {
-                if (newVal === val) return
+  defineResponse(obj, key, val) {
+    // 递归解决数据嵌套
+    this.observer(val)
 
-                val = newVal
+    // const dep = new Dep()
 
-                console.log(`${key} 数据发生改变: ${val}`);
-            }
-        })
-    }
+    Object.defineProperty(obj, key, {
+      get() {
+        // Dep.target && dep.addDep(Dep.target)
+
+        return val
+      },
+      set(newVal) {
+        if (newVal === val) return
+
+        val = newVal
+
+        // dep.nocity()
+
+        console.log(`${key} 数据发生改变: ${val}`)
+      }
+    })
+  }
+}
+
+// Dep：用来管理观察者 watcher
+class Dep {
+  constructor() {
+    this.deps = []
+  }
+
+  addDep(dep) {
+    this.deps.push(dep)
+  }
+
+  nocity() {
+    this.deps.forEach(dep => dep.update())
+  }
+}
+
+class Watcher {
+  constructor() {
+    console.log(Dep)
+    Dep.target = this // 给类 Dep 添加属性 target
+    console.log(Dep.target)
+  }
+
+  update() {
+    console.log('属性更新了')
+  }
 }
 
 var kvue = new Kvue({
