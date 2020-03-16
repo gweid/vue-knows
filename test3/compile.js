@@ -52,14 +52,13 @@ class Compile {
                     const exp = attr.value
                     // console.log(attrName, exp);
 
-                    // 指令
+                    // 指令 k-text k-html k-model
                     if (this.isDirective(attrName)) {
                         const dir = attrName.substring(2)
                         this[dir + "Direct"] && this[dir + "Direct"](node, this.$vm, exp)
                     }
-                    // 事件
+                    // 事件 k-click
                     if (this.isEvent(attrName)) {
-                        // k-click
                         const dir = attrName.substring(1) // click
                         this.eventHandle(node, this.$vm, exp, dir)
                     }
@@ -97,8 +96,10 @@ class Compile {
 
     // 指令 双向数据绑定  k-model
     modelDirect(node, vm, exp) {
+        // 更改 input 内的值
         this.updateFun(node, vm, exp, 'model')
 
+        // 更改 与 input 绑定的 data 的值
         node.addEventListener('input', e => {
             // console.log(vm.$data.name);
             // vm.$data[exp] = e.target.value

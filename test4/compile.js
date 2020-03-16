@@ -36,16 +36,17 @@ class Compile {
                     // console.log(attrName, exp);
                     // 是否指令
                     if (this.isDirective(attrName)) {
-                        // k-text
+                        // k-text k-html k-model
                         const dir = attrName.substring(2)
-                        console.log(dir);
-                        console.log(this[dir + "Direct"]);
+                        // console.log(dir);
+                        // console.log(this[dir + "Direct"]);
 
                         this[dir + "Direct"] && this[dir + "Direct"](node, this.$vm, exp)
                     }
                     // 是否事件
                     if (this.isEvent(attrName)) {
-                        console.log("事件");
+                        const dir = attrName.substring(1)
+                        this.eventHandle(node, this.$vm, exp, dir)
                     }
                 })
             }
@@ -71,6 +72,20 @@ class Compile {
         this.undateFun(node, vm, exp, 'text')
     }
 
+    // 编译 html
+    htmlDirect(node, vm, exp) {
+        this.undateFun(node, vm, exp, 'html')
+    }
+
+    // 双向绑定
+    modelDirect(node, vm, exp) {
+        this.undateFun(node, vm, exp, 'model')
+
+        node.addEventListener('input', e => {
+            vm[exp] = e.target.value
+        })
+    }
+
     // 更新函数
     undateFun(node, vm, exp, dir) {
         const updateFn = this[dir + 'Updater']
@@ -84,6 +99,22 @@ class Compile {
 
     textUpdater(node, val) {
         node.textContent = val
+    }
+
+    htmlUpdater(node, val) {
+        node.innerHTML = val
+    }
+
+    modelUpdater(node, val) {
+        node.value = val
+    }
+
+    // 事件处理
+    eventHandle(node, vm, exp, dir) {
+        const fn = vm.$op.methods && vm.$op.methods[exp]
+        if (dir && fn) {
+            node.addEventListener(dir, fn.bind(vm))
+        }
     }
 
     // 是否元素节点
