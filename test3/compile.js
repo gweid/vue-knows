@@ -38,30 +38,32 @@ class Compile {
         // console.log(Object.prototype.toString.call(childNodes)); // [object NodeList] 为 NodeList 类型
 
         // 将 NodeList 转换为数组遍历: 方法1：[...childNodes]   方法2：Arrsy.from(childNodes)
-        console.log(Array.from(childNodes));
+        // console.log(Array.from(childNodes));
         Array.from(childNodes).forEach(node => {
             // 类型判断 是元素还是文本; 文本如果不是插值文本，不需要编译
             if (this.isElement(node)) {
                 // console.log('编译元素' + node.nodeName);
                 const nodeAttrs = node.attributes
-                console.log(Array.from(nodeAttrs));
+                // console.log(Array.from(nodeAttrs));
 
                 Array.from(nodeAttrs).forEach(attr => {
                     // k-text = "name"    attr.name: k-text  attr.value: name
                     const attrName = attr.name
                     const exp = attr.value
+                    // console.log(attrName, exp);
 
                     // 指令
                     if (this.isDirective(attrName)) {
-                        
+                        const dir = attrName.substring(2)
+                        this[dir + "Direct"] && this[dir + "Direct"](node, this.$vm, exp)
                     }
                     // 事件
-                    if (isEvent()) {
-
+                    if (this.isEvent(attrName)) {
+                        // k-click
+                        const dir = attrName.substring(1) // click
+                        this.eventHandle(node, this.$vm, exp, dir)
                     }
                 })
-
-
 
             } else if (this.isInterpolation(node)) {
                 // console.log('编译文本' + node.textContent);
@@ -88,6 +90,27 @@ class Compile {
         this.updateFun(node, this.$vm, RegExp.$1, 'text')
     }
 
+    // 指令编译文本  k-text
+    textDirect(node, vm, exp) {
+        this.updateFun(node, vm, exp, 'text')
+    }
+
+    // 指令 双向数据绑定  k-model
+    modelDirect(node, vm, exp) {
+        this.updateFun(node, vm, exp, 'model')
+
+        node.addEventListener('input', e => {
+            // console.log(vm.$data.name);
+            // vm.$data[exp] = e.target.value
+            vm[exp] = e.target.value
+        })
+    }
+
+    // 指令 编译 html  k-html
+    htmlDirect(node, vm, exp) {
+        this.updateFun(node, vm, exp, 'html')
+    }
+
     // 更新函数
     updateFun(node, vm, exp, dir) {
         // node: 节点  vm: vue实例  exp: 表达式  dir: 指令(文本或者事件等)
@@ -104,8 +127,26 @@ class Compile {
 
     // 更新文本函数
     textUpdater(node, value) {
-
         node.textContent = value
+    }
+
+    // 更新双向绑定
+    modelUpdater(node, value) {
+        // 使 input 框的值与 data 中的一致
+        node.value = value
+    }
+
+    // 更新 html
+    htmlUpdater(node, value) {
+        node.innerHTML = value
+    }
+
+    // 事件处理
+    eventHandle(node, vm, exp, dir) {
+        const fn = vm.$op.methods && vm.$op.methods[exp]
+        if (dir && fn) {
+            node.addEventListener(dir, fn.bind(vm))
+        }
     }
 
     // 是否元素
@@ -120,11 +161,11 @@ class Compile {
 
     // 是否是指令
     isDirective(attrName) {
-        return attrName.indexOf("k-") == 1
+        return attrName.indexOf("k-") == 0
     }
 
     // 是否是事件
     isEvent(attrName) {
-        return attrName.indexOf("@") == 1
+        return attrName.indexOf("@") == 0
     }
 }
