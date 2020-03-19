@@ -44,8 +44,44 @@
             }, '节点4'),
         ])
 
+        let div2 = new CreateElement('div', {
+            id: 'test'
+        }, [
+            new CreateElement('p', {
+                key: 'd'
+            }, '节点4'),
+            new CreateElement('p', {
+                key: 'a',
+                style: {
+                    color: 'pink'
+                }
+            }, '节点1'),
+            new CreateElement('p', {
+                key: 'b',
+                '@click': () => {
+                    alert("点击事件")
+                }
+            }, '节点2'),
+            new CreateElement('p', {
+                key: 'e',
+                'class': 'item-name'
+            }, '节点5'),
+            new CreateElement('p', {
+                key: 'f',
+                style: {
+                    color: 'pink',
+                    fontSize: '30px',
+                    fontWeight: 700
+                }
+            }, '节点6'),
+        ])
+
         // 渲染 DOM
         new RenderFn(div, "#app")
+
+        setTimeout(() => {
+            new RenderFn(div2, "#app")
+        }, 1000)
     </script>
 </body>
 
