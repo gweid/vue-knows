@@ -50,7 +50,7 @@ class CreateElement {
         } else {
             // 单个
             this.childFlag = childType.SINGLE
-            this.children = this.createTextVnode(children = '')
+            this.children = this.createTextVnode(children)
         }
     }
 
@@ -72,7 +72,8 @@ class CreateElement {
             tag,
             data,
             children,
-            childFlag
+            childFlag,
+            el: null
         }
     }
 }
@@ -83,11 +84,90 @@ class RenderFn {
     constructor(vnode, container) {
 
         this.vnode = vnode
-        this.container = container
+        this.container = document.querySelector(container)
+
 
         // 区分首次渲染和再次渲染
-        this.mountFn(vnode, container)
+        this.mountFn(vnode, this.container)
     }
 
-    mountFn() {}
+    mountFn(vnode, container) {
+        let {
+            flag
+        } = vnode
+
+
+        if (flag == vnodeType.HTML) {
+            // 如果是节点
+            this.mountElement(vnode, container)
+        } else if (flag == vnodeType.TEXT) {
+            // 如果是文本
+            this.mountText(vnode, container)
+        }
+    }
+
+    mountElement(vnode, container) {
+        let dom = document.createElement(vnode.tag)
+
+        // 将当前的 dom 存到虚拟 dom 中
+        vnode.el = dom
+
+        let {
+            data,
+            children,
+            childFlag
+        } = vnode
+
+        // 挂载 data
+        if (data) {
+            Object.keys(data).forEach(key => {
+                // dom: 当前节点, key: 键名,比如 style, null: 老值  data[key]: 新值
+                this.patchData(dom, key, null, data[key])
+            })
+        }
+
+        if (childFlag != childType.EMPTY) {
+            if (childFlag == childType.SINGLE) {
+                this.mountFn(children, dom)
+            } else if (childFlag == childType.MULTIPLE) {
+                children.forEach(item => {
+                    this.mountFn(item, dom)
+                })
+            }
+        }
+
+        container.appendChild(dom)
+    }
+
+    mountText(vnode, container) {
+        let dom = document.createTextNode(vnode.children)
+        vnode.el = dom
+
+        container.appendChild(dom)
+    }
+
+    patchData(dom, key, prv, next) {
+        switch (key) {
+            case 'style':
+                Object.keys(next).forEach(k => {
+                    dom.style[k] = next[k]
+                })
+                break;
+            case 'class':
+                dom.className = next
+                break;
+            default:
+                // 事件
+                if (key[0] === '@') {
+                    if (next) {
+                        let eventName = key.substring(1)
+                        dom.addEventListener(eventName, next)
+                    }
+
+                } else {
+                    dom.setAttribute(key, next)
+                }
+                break;
+        }
+    }
 }

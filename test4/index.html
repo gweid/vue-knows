@@ -19,34 +19,33 @@
 
     <script src="./vdom.js"></script>
     <script>
-        // let div = new CreateElement('div', {
-        //     id: 'test'
-        // }, [new CreateElement('p', {}, ['节点1'])])
-        let div = createElement('div', {
+        // 创建虚拟 DOM
+        let div = new CreateElement('div', {
             id: 'test'
         }, [
-            createElement('p', {
+            new CreateElement('p', {
                 key: 'a',
                 style: {
                     color: 'pink'
                 }
-            }, ['节点1']),
-            createElement('p', {
+            }, '节点1'),
+            new CreateElement('p', {
                 key: 'b',
                 '@click': () => {
                     alert("点击事件")
                 }
-            }, ['节点2']),
-            createElement('p', {
+            }, '节点2'),
+            new CreateElement('p', {
                 key: 'c',
                 'class': 'item-name'
-            }, ['节点3']),
-            createElement('p', {
+            }, '节点3'),
+            new CreateElement('p', {
                 key: 'd'
-            }, ['节点4']),
+            }, '节点4'),
         ])
 
-        console.log(div);
+        // 渲染 DOM
+        new RenderFn(div, "#app")
     </script>
 </body>
 
