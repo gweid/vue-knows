@@ -406,7 +406,7 @@ class RenderFn {
 }
 ```
 
-diff-dom 比较渲染
+3、diff-dom 比较渲染
 
 ```
 // 渲染函数
