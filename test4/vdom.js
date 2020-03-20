@@ -149,8 +149,8 @@ class RenderFn {
         if (nextData) {
             for (let key in nextData) {
                 let prevVal = prevData[key]
-
                 let nextVal = nextData[key]
+
                 this.patchData(el, key, prevVal, nextVal)
             }
         }
@@ -159,6 +159,7 @@ class RenderFn {
         this.patchChildren(el, prev.childFlag, next.childFlag, prev.children, next.children)
     }
 
+    // 更新子元素
     patchChildren(el, prevChildFlag, nextChildFlag, prevChildren, nextChildren) {
         // 1、老的是单独的
         // 老的是空的
@@ -168,37 +169,101 @@ class RenderFn {
         // 新的是空的
         // 新的是多个
 
+        let _this = this
+
         let handle = {
+            // 老的单独, 新的空
             ['SINGLE_EMPTY']() {
-                // 老的单独, 新的空
+                el.removeChild(prevChildren.el)
             },
+            // 老的单独, 新的单独
             ['SINGLE_SINGLE']() {
-                // 老的单独, 新的单独
+                _this.patchFn(prevChildren, nextChildren, el)
             },
+            // 老的单独, 新的多个
             ['SINGLE_MULTIPLE']() {
-                // 老的单独, 新的多个
+                el.removeChild(prevChildren.el)
+                nextChildren.forEach(item => {
+                    _this.mountFn(item, el)
+                })
             },
-            ['EMPTY_EMPTY']() {
-                // 老的空, 新的空
-            },
+            // 老的空, 新的空
+            ['EMPTY_EMPTY']() {},
+            // 老的空, 新的单独
             ['EMPTY_SINGLE']() {
-                // 老的空, 新的单独
+                _this.mountFn(nextChildren, el)
             },
+            // 老的空, 新的多个
             ['EMPTY_MULTIPLE']() {
-                // 老的空, 新的多个
+                nextChildren.forEach(item => {
+                    _this.mountFn(item, el)
+                })
             },
+            // 老的多个, 新的空
             ['MULTIPLE_EMPTY']() {
-                // 老的多个, 新的空
+                prevChildren.forEach(item => {
+                    el.removeChild(item.el)
+                })
             },
+            // 老的多个, 新的单独
             ['MULTIPLE_SINGLE']() {
-                // 老的多个, 新的单独
+                prevChildren.forEach(item => {
+                    el.removeChild(item.el)
+                })
+
+                _this.mountFn(nextChildren, el)
             },
+            // 老的多个, 新的多个
             ['MULTIPLE_MULTIPLE']() {
-                // 老的多个, 新的多个
-                
+                // 主要的 diff-dom 是这里
+                // 老的[abc]
+                // 新的
+                // [abc] 三个元素的位置是递增，不需要修改
+                // [cba] 位置不是递增，需要修改
+                let lastIndex = 0
+                for (let i = 0; i < nextChildren.length; i++) {
+                    let find = false
+                    let nextVnode = nextChildren[i]
+
+                    let j = 0;
+                    for (j; j < prevChildren.length; j++) {
+                        let prevVnode = prevChildren[j]
+
+                        // 如果 key相同,则认为同一个元素
+                        if (nextVnode.data.key === prevVnode.data.key) {
+                            find = true
+
+                            _this.patchFn(prevVnode, nextVnode, el)
+
+                            if (j < lastIndex) {
+                                // 需要移动  abc a想移动到b元素之后，即a移动到b的下一个元素之前 insertBefor
+                                let flagNode = nextChildren[i - 1].el.nextSibling;
+
+                                el.insertBefore(prevVnode.el, flagNode)
+                                break
+                            } else {
+                                lastIndex = j
+                            }
+                        }
+                    }
+
+                    // 需要新增
+                    if (!find) {
+                        let flagNode = i == 0 ? prevChildren[0].el : nextChildren[i - 1].el.nextSibling
+                        _this.mountFn(nextVnode, el, flagNode)
+                    }
+                }
+                // 旧的有，新的没有，删除
+                for (let k = 0; k < prevChildren.length; k++) {
+                    let prevVnode = prevChildren[k]
+                    let has = nextChildren.find(next => next.data.key === prevVnode.data.key)
+
+                    if (!has) {
+                        el.removeChild(prevVnode.el)
+                    }
+                }
             }
         }
-        
 
         handle[prevChildFlag + '_' + nextChildFlag]()
     }
@@ -206,7 +271,6 @@ class RenderFn {
     // 更新文本
     patchText(prev, next) {
         let el = (next.el = prev.el)
-        console.log(el);
 
         if (prev.children !== next.children) {
             el.nodeValue = next.children
@@ -214,7 +278,7 @@ class RenderFn {
     }
 
     // 首次渲染
-    mountFn(vnode, container) {
+    mountFn(vnode, container, flagNode) {
         let {
             flag
         } = vnode
@@ -222,7 +286,7 @@ class RenderFn {
 
         if (flag == vnodeType.HTML) {
             // 如果是节点
-            this.mountElement(vnode, container)
+            this.mountElement(vnode, container, flagNode)
         } else if (flag == vnodeType.TEXT) {
             // 如果是文本
             this.mountText(vnode, container)
@@ -230,7 +294,7 @@ class RenderFn {
     }
 
     // 插入元素节点
-    mountElement(vnode, container) {
+    mountElement(vnode, container, flagNode) {
         let dom = document.createElement(vnode.tag)
 
         // 将当前的 dom 存到虚拟 dom 中
@@ -260,7 +324,7 @@ class RenderFn {
             }
         }
 
-        container.appendChild(dom)
+        flagNode ? container.insertBefore(dom, flagNode) : container.appendChild(dom)
     }
 
     // 插入文本节点
@@ -275,6 +339,7 @@ class RenderFn {
     patchData(dom, key, prev, next) {
         switch (key) {
             case 'style':
+
                 // 把新 dom 的属性添加上
                 for (let k in next) {
                     dom.style[k] = next[k]
@@ -282,7 +347,9 @@ class RenderFn {
 
                 // 旧的属性在新 dom 上不存在，属性值置空
                 for (let k in prev) {
-                    if (!next.hasOwnProperty(k)) {
+                    if (next == null) {
+                        dom.style[k] = ''
+                    } else if (!next.hasOwnProperty(k)) {
                         dom.style[k] = ''
                     }
                 }
